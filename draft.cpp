@@ -9,6 +9,8 @@
 #include <chrono>
 #include <atomic>
 #include <mutex>
+#include <conio.h>
+#include <windows.h> // for accessing windows API
 using namespace std;
 
 // global
@@ -26,7 +28,7 @@ void startMessage() {
 	cout << "Manaois, Chriscel John\n";
 	cout << "Sayat, John Christian\n";
 	
-	cout << "Version date: \n";
+	cout << "Version date: 2.0\n";
 }
 
 void commandInterpreter() {
@@ -37,12 +39,12 @@ void commandInterpreter() {
 
         if (command == "help") {
             cout << "Available commands:\n"
-                 << "  help          - Show this help message\n"
-                 << "  start_marquee - Start the marquee animation\n"
-                 << "  stop_marquee  - Stop the marquee animation\n"
-                 << "  set_text      - Change the marquee text\n"
-                 << "  set_speed     - Change marquee speed (ms)\n"
-                 << "  exit          - Quit program\n";
+                 << "  \"help\"          - Display the commands and their use.  \n"
+                 << "  \"start_marquee\" - Start the marquee \"animation\".     \n"
+                 << "  \"stop_marquee\"  - Stop the marquee \"animation\".      \n"
+                 << "  \"set_text\"      - Change the marquee text.             \n"
+                 << "  \"set_speed\"     - Change marquee speed (ms).           \n"
+                 << "  \"exit\"          - Quit program.                        \n";
         }
         else if (command == "start_marquee") {
             marqueeRunning = true;
