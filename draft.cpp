@@ -9,17 +9,21 @@
 #include <chrono>
 #include <atomic>
 #include <mutex>
-#include <conio.h>
+#include <conio.h> 
 #include <windows.h> // for accessing windows API
-using namespace std;
+#include <queue> // queue data struct for Keyboard Handler (input buffer)
+
 
 // global
-string marqueeText = "Welcome to the C++ Marquee Emulator!";
-atomic<bool> marqueeRunning(false);
-atomic<int> marqueeSpeed(200);
-mutex textMutex;
+std::string marqueeText = "Welcome to the C++ Marquee Emulator!";
+std::atomic<bool> marqueeRunning(false); // thread-safe boolean flag
+std::atomic<int> marqueeSpeed(200); // thread-safe int variable, sets speed of marquee display
+// in miliseconds
+std::mutex textMutex;
+
 
 void startMessage() {
+    using namespace std; // do not declare this global, since we have multiple libraries 
 	cout << "WELCOME to CSOPESY!\n";
 	
 	cout << "Group developer:\n";
@@ -32,13 +36,14 @@ void startMessage() {
 }
 
 void commandInterpreter() {
-    string command;
+    
+    std::string command;
     while (true) {
-        cout << "\nCommand> ";
-        cin >> command;
+        std::cout << "\nCommand> ";
+        std::cin >> command;
 
         if (command == "help") {
-            cout << "Available commands:\n"
+            std::cout << "Available commands:\n"
                  << "  \"help\"          - Display the commands and their use.  \n"
                  << "  \"start_marquee\" - Start the marquee \"animation\".     \n"
                  << "  \"stop_marquee\"  - Stop the marquee \"animation\".      \n"
@@ -53,6 +58,7 @@ void commandInterpreter() {
             marqueeRunning = false;
         }
         else if (command == "set_text") {
+            using namespace std;
             cout << "Enter new text: ";
             cin.ignore(); 
             string newText;
@@ -61,20 +67,23 @@ void commandInterpreter() {
             marqueeText = newText;
         }
         else if (command == "set_speed") {
+            using namespace std;
             cout << "Enter speed in ms: ";
             int speed;
             cin >> speed;
             if (speed > 0) marqueeSpeed = speed;
         }
         else if (command == "exit") {
-            cout << "Exiting console...\n";
+            std::cout << "Exiting console...\n";
             exit(0);
         }
         else {
-            cout << "Unknown command. Type 'help' for options.\n";
+            std::cout << "Unknown command. Type 'help' for options.\n";
         }
     }
 }
+
+
 
 
 int main() {
