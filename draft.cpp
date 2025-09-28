@@ -4,12 +4,12 @@
 */
 
 #include <iostream>
-#include <string>
-#include <thread>
-#include <chrono>
-#include <atomic>
-#include <mutex>
-#include <conio.h> 
+#include <string> // string manipulation, useful for creating Marquee Animation
+#include <thread> // threading
+#include <chrono> // time functions
+#include <atomic> // atomic variables for thread safety
+#include <mutex> // mutual exclusion for thread safety
+#include <conio.h> // console input / output
 #include <windows.h> // for accessing windows API
 #include <queue> // queue data struct for Keyboard Handler (input buffer)
 
@@ -20,6 +20,9 @@ std::atomic<bool> marqueeRunning(false); // thread-safe boolean flag
 std::atomic<int> marqueeSpeed(200); // thread-safe int variable, sets speed of marquee display
 // in miliseconds
 std::mutex textMutex;
+std::queue<std::string> keyboard_queue;
+std::mutex queue_mutex;
+std::atomic<bool> keyboard_stop(false);
 
 
 void startMessage() {
@@ -83,13 +86,64 @@ void commandInterpreter() {
     }
 }
 
+// Handles the Keyboard inputs
+void keyboardHandler() { 
+    std::string input_buffer = "";
 
+    while (!keyboard_stop) {
+        if (_kbhit()) { // check any input from the keyboard
+            char key = _getch(); // get pressed key
+
+            // Check for ENTER key input (Priority)
+            if (key == '\r') { // use carriage return '\r' to detect an Enter key input. 
+                               // '\n' is not actual keyboard input, remember CSARCH2 lol.
+
+                std::lock_guard<std::mutex> lock(queue_mutex); // Lock the queue while pushing, automatically unlocks after
+                keyboard_queue.push(input_buffer);
+                input_buffer = ""; // reinitialize 
+                std::cout << std::endl; // automatically newline after Enter
+            }
+            // Check for Backspace
+            else if (key == '\b') {
+                if (!input_buffer.empty()) { // check if there are characters in the input
+                    input_buffer.pop_back(); // pop Last-In char from queue lol
+                    std::cout << "\b \b"; // move cursor back by one character, replace with " " (space),
+                    // then move cursor back again.
+                    // manual backspace
+                }
+            }
+            // check for displayable characters, refer to ASCII table
+            else if (key >= ' ' && key <= '~') { // ASCII decimal 32 ' ' (space) to decimal 126 '~' (tilde)
+            // is the part of the ASCII table where all the displayable Alphabet, Numbers, and Symbols reside.
+                
+                input_buffer += key; // add into the character array the current _getch
+                std::cout << key; // display the DISPLAYABLE CHARACTER duhh
+            }
+        }
+
+
+        // sleep this thread's while loop, give chance for marquee animation
+        std::this_thread::sleep_for(std::chrono::milliseconds(1)); 
+       
+
+    }
+
+}
 
 
 int main() {
 	
+    std::thread kb_thread(keyboardHandler); // Keyboard Handler thread
+
+    // main thread
 	startMessage();
 	commandInterpreter();
+
+
+    keyboard_stop = true; // end keyboard thread constant checking for inputs
+    
+    // CLEANUP
+    kb_thread.join();
 	
 	return 0;
 }
