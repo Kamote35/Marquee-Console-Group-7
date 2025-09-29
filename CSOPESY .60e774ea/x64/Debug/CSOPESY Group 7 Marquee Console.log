@@ -1,2 +1,3 @@
 ﻿  draft.cpp
+C:\Users\alter\source\repos\CSOPESY S12\Marquee Repository Final\draft.cpp(230,27): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
   CSOPESY Group 7 Marquee Console.vcxproj -> C:\Users\alter\source\repos\CSOPESY S12\Marquee Repository Final\x64\Debug\CSOPESY Group 7 Marquee Console.exe
