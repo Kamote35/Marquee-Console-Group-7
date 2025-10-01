@@ -6,6 +6,6 @@ Members:
 4. Sayat, John Christian N.
 
 # Instructions                      
-1. Clone this repository
+1. Clone this repository or just download 'LatestWorking.cpp'
 2. Open any IDE
 3. Compile and run LatestWorking.cpp
