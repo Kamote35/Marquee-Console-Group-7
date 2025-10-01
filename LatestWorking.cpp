@@ -1,8 +1,3 @@
-/*
-	Debug and implement other functions.
-	
-*/
-
 #include <iostream>
 #include <string> // string manipulation, useful for creating Marquee Animation
 #include <thread> // threading
@@ -12,10 +7,11 @@
 #include <conio.h> // console input / output
 #include <windows.h> // for accessing windows API
 #include <queue> // queue data struct for Keyboard Handler (input buffer)
+#include <sstream> // to parse command arguments from the single input line
 
 
 // global
-std::string marqueeText = "Welcome to the C++ Marquee Emulator!";
+std::string marqueeText = "PLEASE SET TEXT (THIS IS THE DEFAULT TEXT)";
 std::atomic<bool> marqueeRunning(false); // thread-safe boolean flag
 std::atomic<int> marqueeSpeed(200); // thread-safe int variable, sets speed of marquee in miliseconds
 std::mutex textMutex;
@@ -70,29 +66,35 @@ void displayPrompt() {
 // handles OS emulator with marquee animation commands
 void commandInterpreter() {
     while (!command_stop) {
+        std::string full_input_line; // Renamed 'command' to 'full_input_line' for clarity
+        std::string command; // The actual command word (e.g., "set_text")
+
         if (!keyboard_queue.empty()) {
-            std::string command;
             {
                 std::lock_guard<std::mutex> lock(queue_mutex);
                 if (!keyboard_queue.empty()) {
-                    command = keyboard_queue.front();
+                    full_input_line = keyboard_queue.front();
                     keyboard_queue.pop();
                 } else {
                     continue;
                 }
             }
+            
+            // Extract the main command from the full input line
+            std::stringstream ss(full_input_line);
+            ss >> command;
 
             // Handle the command first
             if (command == "help") {
                 std::cout << "Available commands:\n"
-                     << "  \"help\"          - Display the commands and their use.  \n"
-                     << "  \"start_marquee\" - Start the marquee \"animation\".     \n"
-                     << "  \"stop_marquee\"  - Stop the marquee \"animation\".      \n"
-                     << "  \"set_text\"      - Change the marquee text.             \n"
-                     << "  \"set_speed\"     - Change marquee speed (ms).           \n"
-                     << "  \"exit\"          - Quit program.                        \n"
+                     << "  \"help\"            - Display the commands and their use. \n"
+                     << "  \"start_marquee\"   - Start the marquee \"animation\".    \n"
+                     << "  \"stop_marquee\"    - Stop the marquee \"animation\".     \n"
+                     << "  \"set_text\" [text] - Change the marquee text.            \n" 
+                     << "  \"set_speed\" [ms]  - Change marquee speed (ms).          \n" 
+                     << "  \"exit\"            - Quit program.                       \n"
                      << std::endl;
-                displayPrompt();  // Display prompt after command output
+                displayPrompt();// Display prompt after command output
             }
             else if (command == "start_marquee") {
                 if (!marqueeRunning) {
@@ -100,7 +102,7 @@ void commandInterpreter() {
                 }
                 else std::cout << "Marquee animation is already running!\n";
                 std::cout << std::endl;
-				displayPrompt();
+                displayPrompt();
             }
             else if (command == "stop_marquee") {
                 if (marqueeRunning) {
@@ -111,48 +113,51 @@ void commandInterpreter() {
                 displayPrompt();
             }
             else if (command == "set_text") {
-                std::cout << "Enter new text: ";
-                while (keyboard_queue.empty()) {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                }
                 std::string newText;
-                {
-                    std::lock_guard<std::mutex> lock(queue_mutex);
-                    newText = keyboard_queue.front();
-                    keyboard_queue.pop();
+                
+                // Read the rest of the line as the new text (including spaces)
+                // ss is already positioned right after the command word
+                std::getline(ss >> std::ws, newText); // >> std::ws skips leading whitespace
+
+                if (newText.empty()) {
+                    std::cout << "Error: Please provide text after 'set_text'.\n\n";
+                } else {
+                    {
+                        std::lock_guard<std::mutex> lock(textMutex);
+                        marqueeText = newText;
+                    }
+                    std::cout << "Marquee text successfully set to: \"" << newText << "\"\n\n";
                 }
-                {
-                    std::lock_guard<std::mutex> lock(textMutex);
-                    marqueeText = newText;
-                }
-                std::cout << std::endl;
                 displayPrompt();
             }
             else if (command == "set_speed") {
-                std::cout << "Enter speed in ms: ";
-                while (keyboard_queue.empty()) {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                }
                 std::string speedStr;
-                {
-                    std::lock_guard<std::mutex> lock(queue_mutex);
-                    speedStr = keyboard_queue.front();
-                    keyboard_queue.pop();
+                
+                // Extract the next word (the argument) as the speed string
+                ss >> speedStr; 
+                
+                if (speedStr.empty()) {
+                    std::cout << "Error: Please provide a speed value (ms) after 'set_speed'.\n\n";
+                } else {
+                    try {
+                        int speed = std::stoi(speedStr);
+                        if (speed > 0) {
+                            marqueeSpeed = speed;
+                            std::cout << "Marquee speed set to " << speed << "ms.\n\n";
+                        } else {
+                            std::cout << "Invalid speed value. Must be a positive integer.\n\n";
+                        }
+                    } catch (...) {
+                        std::cout << "Invalid speed value. Please enter a number.\n\n";
+                    }
                 }
-                try {
-                    int speed = std::stoi(speedStr);
-                    if (speed > 0) marqueeSpeed = speed;
-                } catch (...) {
-                    std::cout << "Invalid speed value\n";
-                }
-                std::cout << std::endl;
                 displayPrompt();
             }
             else if (command == "exit") {
                 std::cout << "Exiting console...\n";
                 command_stop = true;
                 keyboard_stop = true;
-                marquee_stop = true;  // Add this line
+                marquee_stop = true;// Add this line
                 break;
             }
             else {
@@ -231,7 +236,7 @@ void marqueeWorker() {
                 if (i < (size_t)width) display[i] = text[index];
             }
 
-            // Save cursor position (so typing isn�t disturbed)
+            // Save cursor position (so typing isn’t disturbed)
             CONSOLE_SCREEN_BUFFER_INFO csbi;
             GetConsoleScreenBufferInfo(hOut, &csbi);
             COORD saved = csbi.dwCursorPosition;
